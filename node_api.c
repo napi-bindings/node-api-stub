@@ -221,6 +221,7 @@ napi_get_value_bool(
 }
 
 // Copies LATIN-1 encoded bytes from a string into a buffer.
+
 NAPI_EXTERN napi_status 
 napi_get_value_string_latin1(
     napi_env env, 
@@ -232,6 +233,7 @@ napi_get_value_string_latin1(
 }
 
 // Copies UTF-8 encoded bytes from a string into a buffer.
+
 NAPI_EXTERN napi_status 
 napi_get_value_string_utf8(
     napi_env env,
@@ -243,6 +245,7 @@ napi_get_value_string_utf8(
 }
 
 // Copies UTF-16 encoded bytes from a string into a buffer.
+
 NAPI_EXTERN napi_status 
 napi_get_value_string_utf16(
     napi_env env,
@@ -566,6 +569,7 @@ napi_get_value_external(
 }
 
 // Set initial_refcount to 0 for a weak reference, >0 for a strong reference.
+
 NAPI_EXTERN napi_status 
 napi_create_reference(
     napi_env env,
@@ -577,6 +581,7 @@ napi_create_reference(
 
 // Deletes a reference. The referenced value is released, and may
 // be GC'd unless there are other references to it.
+
 NAPI_EXTERN napi_status 
 napi_delete_reference(
     napi_env env, 
@@ -589,6 +594,7 @@ napi_delete_reference(
 // refcount is >0, and the referenced object is effectively "pinned".
 // Calling this when the refcount is 0 and the object is unavailable
 // results in an error.
+
 NAPI_EXTERN napi_status 
 napi_reference_ref(
     napi_env env,
@@ -601,6 +607,7 @@ napi_reference_ref(
 // If the result is 0 the reference is now weak and the object may be GC'd
 // at any time if there are no other references. Calling this when the
 // refcount is already 0 results in an error.
+
 NAPI_EXTERN napi_status 
 napi_reference_unref(
     napi_env env,
@@ -612,6 +619,7 @@ napi_reference_unref(
 // Attempts to get a referenced value. If the reference is weak,
 // the value might no longer be available, in that case the call
 // is still successful but the result is NULL.
+
 NAPI_EXTERN napi_status 
 napi_get_reference_value(
     napi_env env,
@@ -715,6 +723,7 @@ napi_get_and_clear_last_exception(
 }
 
 // Methods to work with array buffers and typed arrays
+
 NAPI_EXTERN napi_status 
 napi_is_arraybuffer(
     napi_env env,
@@ -863,6 +872,7 @@ napi_is_promise(
 }
 
 // Running a script
+
 NAPI_EXTERN napi_status 
 napi_run_script(
     napi_env env,
@@ -872,6 +882,7 @@ napi_run_script(
 }
 
 // Memory management
+
 NAPI_EXTERN napi_status 
 napi_adjust_external_memory(
     napi_env env,
@@ -991,6 +1002,32 @@ NAPI_EXTERN napi_status
 napi_get_instance_data(
     napi_env env,
     void** data) {
+        return napi_ok;
+}
+
+NAPI_EXTERN napi_status
+napi_get_all_property_names(
+    napi_env env,
+    napi_value object,
+    napi_key_collection_mode key_mode,
+    napi_key_filter key_filter,
+    napi_key_conversion key_conversion,
+    napi_value* result) {
+        return napi_ok;
+}
+
+NAPI_EXTERN napi_status 
+napi_detach_arraybuffer(
+    napi_env env,
+    napi_value arraybuffer) {
+        return napi_ok;
+}
+
+NAPI_EXTERN napi_status 
+napi_is_detached_arraybuffer(
+    napi_env env,
+    napi_value value,
+    bool* result) {
         return napi_ok;
 }
 
@@ -1128,6 +1165,7 @@ napi_cancel_async_work(
 #if NAPI_VERSION >= 2
 
 // Return the current libuv event loop for a given environment
+
 NAPI_EXTERN napi_status 
 napi_get_uv_event_loop(
     napi_env env,
@@ -1181,6 +1219,7 @@ napi_close_callback_scope(
 #if NAPI_VERSION >= 4
 
 // Calling into JS from other threads
+
 NAPI_EXTERN napi_status
 napi_create_threadsafe_function(
     napi_env env,
