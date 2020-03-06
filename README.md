@@ -1,5 +1,4 @@
 # N-API Stub
-Builder for go-napi-sys
 
 This repository contains the stub for N-API used to avoid linker error on building
 native addon for Node.js using programming languages different from C and C++.
