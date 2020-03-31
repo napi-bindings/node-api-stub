@@ -932,7 +932,7 @@ napi_add_finalizer(
 
 #endif // NAPI_VERSION >= 5
 
-#ifdef NAPI_EXPERIMENTAL
+#if NAPI_VERSION >= 6
 
 NAPI_EXTERN napi_status 
 napi_create_bigint_int64(
@@ -1015,6 +1015,10 @@ napi_get_all_property_names(
     napi_value* result) {
         return napi_ok;
 }
+
+#endif // NAPI_VERSION >= 6
+
+#ifdef NAPI_EXPERIMENTAL
 
 NAPI_EXTERN napi_status 
 napi_detach_arraybuffer(
