@@ -1018,7 +1018,7 @@ napi_get_all_property_names(
 
 #endif // NAPI_VERSION >= 6
 
-#ifdef NAPI_EXPERIMENTAL
+#if NAPI_VERSION >= 7
 
 NAPI_EXTERN napi_status 
 napi_detach_arraybuffer(
@@ -1035,6 +1035,40 @@ napi_is_detached_arraybuffer(
         return napi_ok;
 }
 
+#endif  // NAPI_EXPERIMENTAL
+
+#ifdef NAPI_EXPERIMENTAL
+// Type tagging
+NAPI_EXTERN napi_status 
+napi_type_tag_object(
+    napi_env env,
+    napi_value value,
+    const napi_type_tag* type_tag) {
+        return napi_ok;
+}
+
+NAPI_EXTERN napi_status
+napi_check_object_type_tag(
+    napi_env env,
+    napi_value value,
+    const napi_type_tag* type_tag,
+    bool* result) {
+        return napi_ok;
+}
+
+NAPI_EXTERN napi_status 
+napi_object_freeze(
+    napi_env env,
+    napi_value object) {
+        return napi_ok;
+
+}
+NAPI_EXTERN napi_status 
+napi_object_seal(
+    napi_env env,
+    napi_value object) {
+        return napi_ok;
+}
 #endif  // NAPI_EXPERIMENTAL
 
 // ##############################################################################
@@ -1283,3 +1317,22 @@ napi_ref_threadsafe_function(
 }
 
 #endif  // NAPI_VERSION >= 4
+
+#ifdef NAPI_EXPERIMENTAL
+
+NAPI_EXTERN napi_status 
+napi_add_async_cleanup_hook(
+    napi_env env,
+    napi_async_cleanup_hook hook,
+    void* arg,
+    napi_async_cleanup_hook_handle* remove_handle) {
+        return napi_ok;
+}
+
+NAPI_EXTERN napi_status 
+napi_remove_async_cleanup_hook(
+    napi_async_cleanup_hook_handle remove_handle) {
+        return napi_ok;
+}
+
+#endif  // NAPI_EXPERIMENTAL

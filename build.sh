@@ -14,7 +14,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 export MACOSX_DEPLOYMENT_TARGET=10.10
 fi 
 
-gcc -c node_api.c -DNAPI_EXPERIMENTAL=1 && \
+gcc -c node_api.c -DNAPI_EXPERIMENTAL && \
 ar -rcs libnode_api.a node_api.o && \
 ranlib libnode_api.a && \
 mkdir build && \
