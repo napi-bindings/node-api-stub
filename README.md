@@ -13,7 +13,7 @@
 ## Introduction
 
 This repository contains the stub for Node-API used to avoid linker error on 
-buildingvnative addon for Node.js using programming languages different from 
+building native addon for Node.js using programming languages different from 
 C and C++.
 
 ## Building
