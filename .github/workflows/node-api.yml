@@ -98,6 +98,8 @@ jobs:
         brew install p7zip cmake
         cmake --version
         make --version
+        echo "Set MACOSX_DEPLOYMENT_TARGET to 10.10"
+        export MACOSX_DEPLOYMENT_TARGET=10.10
     - name: Configure on Unix system
       if: startsWith(matrix.config.os, 'macos') || startsWith(matrix.config.os, 'ubuntu')
       shell: bash
