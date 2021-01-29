@@ -1,6 +1,6 @@
 # Node-API Stub
 
-![Node-API Build Matrix](https://github.com/napi-bindings/napi-stub/workflows/Node-API%20Build%20Matrix/badge.svg)
+![Node-API Build Matrix](https://github.com/napi-bindings/node-api-stub/workflows/Node-API%20Build%20Matrix/badge.svg)
 
 - [Introduction](#introduction)
 - [Building](#building)
@@ -31,7 +31,7 @@ following operating systems:
 If you want to build the Node-API library on your own the first step is to 
 clone this repository:
 
-`> git clone https://github.com/napi-bindings/napi-stub.git`
+`> git clone https://github.com/napi-bindings/node-api-stub.git`
 
 ### Building on Windows
 
