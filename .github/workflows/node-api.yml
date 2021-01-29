@@ -1,0 +1,149 @@
+name: Node-API Build Matrix
+
+on: [push, pull_request, release]
+
+jobs:
+  build:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+       config: 
+         - { 
+             name: "Windows", 
+             os: "windows-latest", 
+             artifact: "libnode_api-windows",
+             build_type: "Release",
+             generator: "CodeBlocks - Unix Makefiles",
+             compiler: {
+               name: "tdm-gcc",
+               version: "9.2.0"
+             },
+             archiver: "7z" 
+           }
+         - { 
+             name: "Ubuntu 20.04", 
+             os: "ubuntu-20.04", 
+             artifact: "libnode_api-ubuntu-20_04",
+             build_type: "Release",
+             generator: "Unix Makefiles",
+             archiver: "7z" 
+           }
+         - { 
+             name: "Ubuntu 18.04", 
+             os: "ubuntu-18.04", 
+             artifact: "libnode_api-ubuntu-18_04",
+             build_type: "Release",
+             generator: "Unix Makefiles", 
+             archiver: "7z" 
+           }
+         - { 
+             name: "Ubuntu 16.04", 
+             os: "ubuntu-16.04", 
+             artifact: "libnode_api-ubuntu-16_04",
+             build_type: "Release",
+             generator: "Unix Makefiles",
+             archiver: "7z" 
+           }
+         - { 
+             name: "macOS", 
+             os: "macos-latest", 
+             artifact: "libnode_api-macOS",
+             build_type: "Release",
+             generator: "Unix Makefiles",
+             archiver: "7z" 
+           }  
+    steps:
+    - uses: actions/checkout@v2
+    - name: Print environment
+      run: |
+        echo "Name: ${{ matrix.config.name }}"
+        echo "OS: ${{ matrix.config.os }}"
+        echo "Generator: ${{ matrix.config.generator }}"
+        echo "Archiver: ${{ matrix.config.archiver }}"
+        echo "Artifact: ${{ matrix.config.artifact }}"
+    - name: Install dependencies on Windows
+      if: startsWith(matrix.config.os, 'windows')
+      run: |
+        echo "Install for windows ..."
+        choco install cmake
+        cmake --version
+        make --version
+        choco install wget
+        wget --version
+        choco install 7zip.install
+        ${{ matrix.config.archiver }}
+    - name: Install compiler on Windows
+      if: startsWith(matrix.config.os, 'windows')
+      shell: bash
+      run: |
+        wget -O ${{ matrix.config.compiler.name }}.zip https://github.com/napi-bindings/tdm-gcc/archive/v${{ matrix.config.compiler.version }}.zip
+        ${{ matrix.config.archiver }} x tdm-gcc.zip -o/
+    - name: Install dependencies on Linux
+      if: startsWith(matrix.config.os, 'ubuntu')
+      run: |
+        echo "Install for Linux ..."
+        sudo apt-get update
+        sudo apt-get install build-essential -y
+        sudo apt-get install cmake -y
+        sudo apt-get install p7zip-full -y
+        gcc --version
+        cmake --version
+        make --version
+    - name: Install dependencies on macOS
+      if: startsWith(matrix.config.os, 'macos')
+      run: |
+        echo "Install for macOs ..."
+        brew install p7zip cmake
+        cmake --version
+        make --version
+    - name: Configure on Unix system
+      if: startsWith(matrix.config.os, 'macos') || startsWith(matrix.config.os, 'ubuntu')
+      shell: bash
+      run: |
+        mkdir ./build
+        mkdir ./qjs
+        cmake \
+          -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
+          -G "${{ matrix.config.generator }}" \
+          -S ./ \
+          -B ./build
+    - name: Configure on Windows
+      if: startsWith(matrix.config.os, 'windows')
+      shell: bash
+      run: |
+        mkdir ./build
+        mkdir ./node_api
+        cmake \
+          -DCMAKE_MAKE_PROGRAM=/${{ matrix.config.compiler.name }}-${{ matrix.config.compiler.version }}/bin/mingw32-make.exe \
+          -DCMAKE_C_COMPILER=/${{ matrix.config.compiler.name }}-${{ matrix.config.compiler.version }}/bin/gcc.exe \
+          -DCMAKE_CXX_COMPILER=/${{ matrix.config.compiler.name }}-${{ matrix.config.compiler.version }}/bin/g++.exe \
+          -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
+          -G "${{ matrix.config.generator }}" \
+          -S ./ \
+          -B ./build
+    - name: Build
+      shell: bash
+      run: cmake --build ./build --config ${{ matrix.config.build_type }}
+    - name: "Prepare"
+      shell: bash
+      run: |
+        cp ./build/libnode_api.a ./node_api/libnode_api.a
+        cd ./node_api
+        ${{ matrix.config.archiver }} a -tzip ../${{ matrix.config.artifact }}.zip .
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        path: ./${{ matrix.config.artifact }}.zip
+        name: ${{ matrix.config.artifact }}
+    - name: Release
+      if: github.event_name == 'release' && (github.event.action == 'published')
+      uses: actions/upload-release-asset@v1
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{ matrix.config.artifact }}.zip
+          asset_name: ${{ matrix.config.artifact }}.zip
+          asset_content_type: application/zip
