@@ -103,7 +103,7 @@ jobs:
       shell: bash
       run: |
         mkdir ./build
-        mkdir ./qjs
+        mkdir ./node_api
         cmake \
           -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
           -G "${{ matrix.config.generator }}" \
