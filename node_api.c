@@ -1035,9 +1035,10 @@ napi_is_detached_arraybuffer(
         return napi_ok;
 }
 
-#endif  // NAPI_EXPERIMENTAL
+#endif // NAPI_VERSION >= 7
 
-#ifdef NAPI_EXPERIMENTAL
+#if NAPI_VERSION >= 8
+
 // Type tagging
 NAPI_EXTERN napi_status 
 napi_type_tag_object(
@@ -1069,7 +1070,7 @@ napi_object_seal(
     napi_value object) {
         return napi_ok;
 }
-#endif  // NAPI_EXPERIMENTAL
+#endif  // NAPI_VERSION >= 8
 
 // ##############################################################################
 // Stub for runtime API
@@ -1318,7 +1319,7 @@ napi_ref_threadsafe_function(
 
 #endif  // NAPI_VERSION >= 4
 
-#ifdef NAPI_EXPERIMENTAL
+#if NAPI_VERSION >= 8
 
 NAPI_EXTERN napi_status 
 napi_add_async_cleanup_hook(
@@ -1332,6 +1333,16 @@ napi_add_async_cleanup_hook(
 NAPI_EXTERN napi_status 
 napi_remove_async_cleanup_hook(
     napi_async_cleanup_hook_handle remove_handle) {
+        return napi_ok;
+}
+
+#endif  // NAPI_VERSION >= 8
+
+#ifdef NAPI_EXPERIMENTAL
+
+NAPI_EXTERN napi_status
+node_api_get_module_file_name(
+    napi_env env, const char** result) {
         return napi_ok;
 }
 
