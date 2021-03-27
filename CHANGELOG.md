@@ -1,5 +1,15 @@
 # node-api-stub Changelog
 
+## 2021-03-27 Version 8.0.0, @NickNaso
+
+### Notable changes
+
+- Updated to Node-API version 8.
+
+### Commits
+
+* [[`09510f9b81`](https://github.com/nodejs/node/commit/09510f9b81)] - Update Node-API to version 8. (NickNaso)
+
 ## 2021-01-29 Version 7.0.0, @NickNaso
 
 ### Notable changes
