@@ -1076,6 +1076,8 @@ napi_object_seal(
 // Stub for runtime API
 // ##############################################################################
 
+NAPI_EXTERN void napi_module_register(napi_module* mod) {}
+
 void exit()  __attribute__((noreturn));
     
 NAPI_EXTERN NAPI_NO_RETURN 
