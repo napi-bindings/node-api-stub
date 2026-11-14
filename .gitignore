@@ -1,2 +1,5 @@
-build
+build/
+build-*/
+dist/
+.tmp-node-api-headers/
 .DS_Store

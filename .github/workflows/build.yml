@@ -1,0 +1,63 @@
+name: Node-API Build Matrix
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+
+permissions:
+  contents: write   # upload release assets
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux-x64-gnu,     os: ubuntu-24.04 }
+          - { name: linux-arm64-gnu,   os: ubuntu-24.04-arm }
+          - { name: linux-x64-musl,    os: ubuntu-24.04, container: "node:22-alpine" }
+          - { name: darwin-universal,  os: macos-latest, cmake: "'-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64' -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0" }
+          - { name: win32-x64-msvc,    os: windows-latest, cmake: "-A x64" }
+          - { name: win32-ia32-msvc,   os: windows-latest, cmake: "-A Win32", notest: true }
+          - { name: win32-arm64-msvc,  os: windows-11-arm, cmake: "-A ARM64" }
+          - { name: win32-x64-mingw,   os: windows-latest, msys2: CLANG64, cmake: "-G Ninja" }
+    defaults:
+      run:
+        shell: ${{ matrix.msys2 && 'msys2 {0}' || 'bash' }}
+    steps:
+      - uses: actions/checkout@v5
+      - if: matrix.container
+        shell: sh
+        run: apk add --no-cache bash cmake make gcc musl-dev tar github-cli
+      - if: matrix.msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msys2 }}
+          pacboy: cc:p cmake:p ninja:p
+          path-type: inherit   # makes the node installed by setup-node visible to ctest
+      - if: ${{ !matrix.container }}
+        uses: actions/setup-node@v5
+        with: { node-version: 22 }
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD/dist" ${{ matrix.cmake }}
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Test (addons loaded by node)
+        if: ${{ !matrix.notest }}
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Install and package
+        run: |
+          cmake --install build --config Release
+          tar -czf node-api-stub-${{ matrix.name }}.tar.gz -C dist .
+      - uses: actions/upload-artifact@v6
+        with:
+          name: node-api-stub-${{ matrix.name }}
+          path: node-api-stub-${{ matrix.name }}.tar.gz
+      - if: github.event_name == 'release'
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: gh release upload "${{ github.event.release.tag_name }}" node-api-stub-${{ matrix.name }}.tar.gz --clobber
