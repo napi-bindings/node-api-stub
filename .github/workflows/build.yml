@@ -21,16 +21,16 @@ jobs:
           - { name: linux-x64-gnu,     os: ubuntu-24.04 }
           - { name: linux-arm64-gnu,   os: ubuntu-24.04-arm }
           - { name: linux-x64-musl,    os: ubuntu-24.04, container: "node:22-alpine" }
-          - { name: darwin-universal,  os: macos-14, cmake: "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64 -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0" }
-          - { name: win32-x64-msvc,    os: windows-2022, cmake: "-A x64" }
-          - { name: win32-ia32-msvc,   os: windows-2022, cmake: "-A Win32", notest: true }
+          - { name: darwin-universal,  os: macos-latest, cmake: "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64 -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0" }
+          - { name: win32-x64-msvc,    os: windows-latest, cmake: "-A x64" }
+          - { name: win32-ia32-msvc,   os: windows-latest, cmake: "-A Win32", notest: true }
           - { name: win32-arm64-msvc,  os: windows-11-arm, cmake: "-A ARM64" }
-          - { name: win32-x64-mingw,   os: windows-2022, msys2: CLANG64, cmake: "-G Ninja" }
+          - { name: win32-x64-mingw,   os: windows-latest, msys2: CLANG64, cmake: "-G Ninja" }
     defaults:
       run:
         shell: ${{ matrix.msys2 && 'msys2 {0}' || 'bash' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - if: matrix.container
         shell: sh
         run: apk add --no-cache bash cmake make gcc musl-dev tar github-cli
@@ -41,7 +41,7 @@ jobs:
           pacboy: cc:p cmake:p ninja:p
           path-type: inherit   # makes the node installed by setup-node visible to ctest
       - if: ${{ !matrix.container }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with: { node-version: 22 }
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD/dist" ${{ matrix.cmake }}
@@ -54,7 +54,7 @@ jobs:
         run: |
           cmake --install build --config Release
           tar -czf node-api-stub-${{ matrix.name }}.tar.gz -C dist .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: node-api-stub-${{ matrix.name }}
           path: node-api-stub-${{ matrix.name }}.tar.gz
