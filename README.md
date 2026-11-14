@@ -3,127 +3,159 @@
 ![Node-API Build Matrix](https://github.com/napi-bindings/node-api-stub/workflows/Node-API%20Build%20Matrix/badge.svg)
 
 - [Introduction](#introduction)
-- [Building](#building)
+- [How it works](#how-it-works)
+- [Using it from CMake](#using-it-from-cmake)
+- [Targets and options](#targets-and-options)
+- [Stub libraries](#stub-libraries)
+- [Building and testing](#building-and-testing)
+- [Updating the Node-API headers](#updating-the-node-api-headers)
+- [Migrating from 8.x](#migrating-from-8x)
 - [Code of conduct](CODE_OF_CONDUCT.md)
 - [Changelog](CHANGELOG.md)
-- [Team](#team)
-- [Acknowledgments](#acknowledgements)
+- [Team](#the-team)
+- [Acknowledgements](#acknowledgements)
 - [License](#license)
 
 ## Introduction
 
-This repository contains the stub for Node-API used to avoid linker error on 
-building native addon for Node.js using programming languages different from 
-C and C++.
+A native addon for Node.js calls the Node-API functions (`napi_*`, `node_api_*`)
+exported by the host process (`node`, `node.exe`, Electron, ...). When the addon
+is built, those symbols do not exist yet, and some toolchains refuse to link:
+Windows always needs an import library, macOS rejects undefined symbols by
+default, and on Linux some build systems add `-z defs`.
 
-## Building
+This project gives CMake projects (and any other build system) everything they
+need to link an addon on every platform, without Node.js installed:
 
-The main purpose of this reposistory is to build Node-API static library that 
-you could include on your project. On release you can find the build for the 
-following operating systems:
+- the official Node-API headers, vendored from
+  [node-api-headers](https://github.com/nodejs/node-api-headers) (Node-API 10);
+- a `NodeApi::NodeApi` target that applies the right link mechanism for the
+  platform;
+- optional static and shared stub libraries for the cases that need them.
 
-- **Windows**
-- **Ubuntu 20.04**
-- **Ubuntu 18.04**
-- **Ubuntu 16.04**
-- **macOS**
+## How it works
 
-If you want to build the Node-API library on your own the first step is to 
-clone this repository:
+The addon must always end up calling the Node-API functions of the host
+process. A library with function bodies linked into the addon can be called
+instead of them, so the right mechanism depends on the platform:
 
-`> git clone https://github.com/napi-bindings/node-api-stub.git`
+| Platform | What `NodeApi::NodeApi` does |
+|---|---|
+| Windows, MSVC / clang-cl (x64, x86, arm64) | links `node_api.lib`, an import library for `NODE.EXE` generated from the official `.def` file, plus `/DELAYLOAD:node.exe` and a delay-load hook so that the addon also loads in hosts with another name (Electron, a renamed `node.exe`) |
+| Windows, MinGW / llvm-mingw | links `libnode_api.dll.a`, generated with `dlltool` |
+| macOS | `-Wl,-U,_<symbol>` for each Node-API symbol: only those may stay undefined (or `-undefined dynamic_lookup`, see options) |
+| Linux, BSD, Android (ELF) | nothing is linked; adds `-z undefs` so that `-z defs` does not reject the Node-API symbols |
 
-### Building on Windows
+The import libraries are generated at configure time, so the project builds
+from source anywhere a C compiler is available; prebuilt archives are also
+attached to each release.
 
-You will need to install **GCC** for Windows and **CMake**.
+> **Why not a stub everywhere?** A stub linked into the addon is called instead
+> of Node-API when the linker binds the calls inside the addon: always on
+> Windows and macOS, and on Linux when the addon is linked with `-Bsymbolic`.
+> `go build -buildmode=c-shared` always passes `-Bsymbolic`, so a Go addon
+> linked with the static stub calls the empty functions. The tests in
+> [`tests/`](tests/CMakeLists.txt) reproduce this case.
 
-#### Install GCC compiler
+## Using it from CMake
 
-- Download the right version for your system from this **[link](https://jmeubank.github.io/tdm-gcc/download/)**.
-- Be sure that **gcc** in in your path of execution.
+```cmake
+# A) from source (recommended)
+include(FetchContent)
+FetchContent_Declare(node_api_stub
+  GIT_REPOSITORY https://github.com/napi-bindings/node-api-stub.git
+  GIT_TAG        v10.0.0)
+FetchContent_MakeAvailable(node_api_stub)
 
-#### Install CMake
+# B) from an installed package or a release archive
+# find_package(NodeApi 10 REQUIRED CONFIG)
 
-- Download the right version for your system from this **[link](https://cmake.org/download/)**.
-- Be sure that **cmake** is in your path of execution.
-
-#### Configure and build
-
-Open your shell and execute the commands reported below:
-
-```
-mkdir ./build
-cmake \
--DCMAKE_MAKE_PROGRAM=mingw32-make.exe \
--DCMAKE_C_COMPILER=gcc.exe \
--DCMAKE_CXX_COMPILER=g++.exe \
--DCMAKE_BUILD_TYPE=Release \
--G "CodeBlocks - Unix Makefiles" \
--S ./ \
--B ./build
-cmake --build ./build
-```
-
-`-DCMAKE_BUILD_TYPE` could be set with one of the following two values:
-
-- Release
-- Debug
-
-### Building on Unix-like platform
-
-You will need to install **C / C++** compiler and **CMake**.
-
-#### Prerequisistes to build on Linux
-
-These steps were tested on: 
-
-- **Ubuntu 16.04** 
-- **Ubuntu 18.04** 
-- **Ubuntu 20.04**
-
-First, you will need to install dependencies:
-
-```
-sudo apt-get update
-sudo apt-get install build-essential -y
-sudo apt-get install cmake -y
-```
-#### Prerequisites to build on macOS
-
-These steps were tested on macOS Catalina (10.15).
-
-First, you will need to install dependencies:
-
-- Install [Xcode](https://developer.apple.com/xcode/download/)
-   - You also need to install the `XCode Command Line Tools` by running 
-   `xcode-select --install`. Alternatively, if you already have the full Xcode 
-   installed, you can find them under the menu 
-   `Xcode -> Open Developer Tool -> More Developer Tools...`. This step will 
-   install `clang`, `clang++`, and `make`.
-- Install [Homebrew](https://brew.sh/)
-- Install and `cmake` running the following command:
-```
-brew install cmake
+add_library(my_addon MODULE addon.c)
+set_target_properties(my_addon PROPERTIES PREFIX "" SUFFIX ".node")
+target_link_libraries(my_addon PRIVATE NodeApi::NodeApi)
 ```
 
-#### Configure and build
+`add_subdirectory(node-api-stub)` works the same way as `FetchContent`.
 
-Open your shell and execute the commands reported below:
+## Targets and options
+
+| Target | Content |
+|---|---|
+| `NodeApi::NodeApi` | **use this one.** Headers, `NAPI_VERSION`, `BUILDING_NODE_EXTENSION` and the platform link mechanism |
+| `NodeApi::headers` | headers and compile definitions only |
+| `NodeApi::stub` | static stub, position-independent |
+| `NodeApi::stub_shared` | shared stub |
+| `NodeApi::legacy` | alias of `NodeApi::stub`, for projects that used the old `node_api` target |
+
+| Option | Default | Effect |
+|---|---|---|
+| `NODE_API_VERSION` | `8` | `NAPI_VERSION` defined for consumers; `experimental` defines `NAPI_EXPERIMENTAL`; empty to leave it to the consumer |
+| `NODE_API_BUILD_STUB_STATIC` | ON on ELF, OFF on Windows/macOS | build `NodeApi::stub` |
+| `NODE_API_BUILD_STUB_SHARED` | ON on ELF, OFF on Windows/macOS | build `NodeApi::stub_shared` |
+| `NODE_API_ELF_ALLOW_UNDEFINED` | ON | add `-z undefs` on ELF |
+| `NODE_API_MACOS_UNDEFINED` | `symbols` | `symbols` (`-U` per Node-API symbol) or `dynamic_lookup` |
+| `NODE_API_WIN_DELAY_LOAD` | ON | MSVC: delay-load `node.exe` and redirect it to the host executable |
+| `NODE_API_INSTALL` | ON when top level | install and export rules |
+| `NODE_API_BUILD_TESTS` | ON when top level | tests that load the addons in Node.js |
+
+When the project is used as a dependency, the stub libraries are excluded from
+`all` and are built only if a target links them.
+
+## Stub libraries
+
+The stubs are generated from `def/node_api.def`: each function prints its own
+name and calls `abort()`. They must never run; if they do, the addon fails
+loudly instead of carrying on with uninitialised values.
+
+- **Static (`libnode_api_stub.a`)**: for toolchains that need an archive to
+  link and do not accept linker options. On ELF it works only through symbol
+  interposition: do not use it with `-Bsymbolic`, and therefore not with Go
+  `-buildmode=c-shared`.
+- **Shared (`libnode_api_stub.so`)**: correct even with `-Bsymbolic`, but the
+  addon records a `DT_NEEDED` entry for it: remove it after linking
+  (`patchelf --remove-needed libnode_api_stub.so addon.node`) or ship the
+  library next to the addon.
+- **Windows and macOS**: not recommended; built only on explicit request.
+
+Other options that avoid the link problem entirely are resolving the Node-API
+functions at run time (`dlsym(RTLD_DEFAULT, ...)` / `GetProcAddress`), as
+[napi-rs](https://napi.rs) does, or declaring them as weak references on ELF
+(`#pragma weak napi_create_object`).
+
+## Building and testing
+
+You need CMake 3.16 or later and a C compiler. Node.js is optional and is used
+only by the tests, which load the test addons and check that their calls reach
+the real Node-API.
 
 ```
-mkdir ./build
-cmake \
--DCMAKE_BUILD_TYPE=Release \
--G "Unix Makefiles" \
--S ./ \
--B ./build
-cmake --build ./build
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release
+ctest --test-dir build -C Release --output-on-failure
+cmake --install build --config Release --prefix ./dist
 ```
 
-`-DCMAKE_BUILD_TYPE` could be set with one of the following two values:
+On Windows use the Visual Studio generator (`-A x64`, `-A Win32`, `-A ARM64`)
+or MinGW / llvm-mingw with `-G Ninja`.
 
-- Release
-- Debug
+## Updating the Node-API headers
+
+`include/` and `def/` come unmodified from the
+[node-api-headers](https://www.npmjs.com/package/node-api-headers) npm package.
+To update them (Node.js and npm are not needed):
+
+```
+cmake -DVERSION=1.9.0 -P scripts/update-node-api-headers.cmake
+```
+
+## Migrating from 8.x
+
+- The headers moved from the repository root to `include/`; `node_api.c` is
+  now generated.
+- Replace the `node_api` target with `NodeApi::NodeApi`. If you really need the
+  old static archive, link `NodeApi::legacy` (on ELF only).
+- The static library is now called `libnode_api_stub.a`, and its functions
+  abort instead of returning `napi_ok`.
 
 ## The Team
 
@@ -141,4 +173,8 @@ Thank you to all people that encourage me every day.
 
 ## License
 
-Licensed under [Apache license V2](./LICENSE)
+Licensed under [Apache license V2](./LICENSE).
+
+The files in `include/` and `def/` come from
+[node-api-headers](https://github.com/nodejs/node-api-headers) and are
+licensed under the MIT license (see `def/LICENSE-node-api-headers`).

@@ -1,0 +1,13 @@
+@PACKAGE_INIT@
+
+# Exported targets:
+#   NodeApi::NodeApi      headers + the right link mechanism for the platform (recommended)
+#   NodeApi::headers      Node-API headers only
+#   NodeApi::stub         static stub (if built)
+#   NodeApi::stub_shared  shared stub (if built)
+include("${CMAKE_CURRENT_LIST_DIR}/NodeApiTargets.cmake")
+
+set(NodeApi_HEADERS_VERSION "@NODE_API_HEADERS_VERSION@")
+set(NodeApi_NAPI_VERSION "@NODE_API_VERSION@")
+
+check_required_components(NodeApi)
