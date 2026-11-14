@@ -60,4 +60,6 @@ jobs:
           path: node-api-stub-${{ matrix.name }}.tar.gz
       - if: github.event_name == 'release'
         env: { GH_TOKEN: "${{ github.token }}" }
-        run: gh release upload "${{ github.event.release.tag_name }}" node-api-stub-${{ matrix.name }}.tar.gz --clobber
+        # --repo: in the Alpine container the checkout has no .git directory
+        # (git is not installed yet when actions/checkout runs).
+        run: gh release upload "${{ github.event.release.tag_name }}" node-api-stub-${{ matrix.name }}.tar.gz --clobber --repo "${{ github.repository }}"
