@@ -21,7 +21,7 @@ jobs:
           - { name: linux-x64-gnu,     os: ubuntu-24.04 }
           - { name: linux-arm64-gnu,   os: ubuntu-24.04-arm }
           - { name: linux-x64-musl,    os: ubuntu-24.04, container: "node:22-alpine" }
-          - { name: darwin-universal,  os: macos-latest, cmake: "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64 -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0" }
+          - { name: darwin-universal,  os: macos-latest, cmake: "'-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64' -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0" }
           - { name: win32-x64-msvc,    os: windows-latest, cmake: "-A x64" }
           - { name: win32-ia32-msvc,   os: windows-latest, cmake: "-A Win32", notest: true }
           - { name: win32-arm64-msvc,  os: windows-11-arm, cmake: "-A ARM64" }
